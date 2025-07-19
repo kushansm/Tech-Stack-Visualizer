@@ -1,30 +1,21 @@
 import axios from 'axios';
 
-const GITHUB_API = 'https://github.com/kushansm';
-
-export const fetchRepos = async (username) => {
-    const response = await axios.get(`${GITHUB_API}/${username}/repos`);
-    return response.data;
-};
-
-export const fetchRepoLanguages = async (username, repoName) => {
-    const response = await axios.get(`${GITHUB_API}/${username}/${repoName}/languages`);
-    return response.data;
-};
-
 export const fetchAllLanguages = async (username) => {
-    const repos = await fetchRepos(username);
+    const reposRes = await axios.get(`https://api.github.com/users/${username}/repos`);
+    const repos = reposRes.data;
+
     const languageData = {};
 
     for (const repo of repos) {
-        const repoLangs = await fetchRepoLanguages(username, repo.name);
+        try {
+            const langRes = await axios.get(`https://api.github.com/repos/${username}/${repo.name}/languages`);
+            const repoLangs = langRes.data;
 
-        for (const [lang, bytes] of Object.entries(repoLangs)) {
-            if (languageData[lang]) {
-                languageData[lang] += bytes;
-            } else {
-                languageData[lang] = bytes;
+            for (const [lang, bytes] of Object.entries(repoLangs)) {
+                languageData[lang] = (languageData[lang] || 0) + bytes;
             }
+        } catch (err) {
+            console.warn(`Skipping ${repo.name}:`, err.message);
         }
     }
 
