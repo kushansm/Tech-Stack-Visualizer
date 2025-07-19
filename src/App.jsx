@@ -110,12 +110,18 @@ function App() {
                         Languages Used by <span className="text-indigo-600">{username}</span>
                     </h2>
                     <ul className="mb-4">
-                        {Object.entries(languages).map(([lang, bytes]) => (
-                            <li key={lang}>
-                                <strong>{lang}:</strong> {bytes.toLocaleString()} bytes
-                            </li>
-                        ))}
+                        {Object.entries(languages).map(([lang, bytes]) => {
+                            const totalBytes = Object.values(languages).reduce((acc, val) => acc + val, 0);
+                            const percent = ((bytes / totalBytes) * 100).toFixed(2);
+
+                            return (
+                                <li key={lang}>
+                                    <strong>{lang}:</strong> {bytes.toLocaleString()} bytes ({percent}%)
+                                </li>
+                            );
+                        })}
                     </ul>
+
                     <Pie data={chartData} />
                 </div>
             )}
