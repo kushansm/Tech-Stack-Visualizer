@@ -1,23 +1,37 @@
 import axios from 'axios';
 
-export const fetchAllLanguages = async (username) => {
-    const reposRes = await axios.get(`https://api.github.com/users/${username}/repos`);
-    const repos = reposRes.data;
+const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
 
-    const languageData = {};
+export async function fetchAllLanguages(username) {
+    try {
+        const reposResponse = await axios.get(`https://api.github.com/users/${username}/repos`, {
+            headers: {
+                Authorization: `token ${GITHUB_TOKEN}`,
+            },
+        });
 
-    for (const repo of repos) {
-        try {
-            const langRes = await axios.get(`https://api.github.com/repos/${username}/${repo.name}/languages`);
-            const repoLangs = langRes.data;
+        const repos = reposResponse.data;
+        const languagesData = {};
 
-            for (const [lang, bytes] of Object.entries(repoLangs)) {
-                languageData[lang] = (languageData[lang] || 0) + bytes;
+        // Fetch languages for each repo with token
+        for (const repo of repos) {
+            try {
+                const langResponse = await axios.get(repo.languages_url, {
+                    headers: {
+                        Authorization: `token ${GITHUB_TOKEN}`,
+                    },
+                });
+                const repoLangs = langResponse.data;
+                for (const [lang, bytes] of Object.entries(repoLangs)) {
+                    languagesData[lang] = (languagesData[lang] || 0) + bytes;
+                }
+            } catch (err) {
+                console.warn(`Skipping ${repo.name}: ${err.message}`);
             }
-        } catch (err) {
-            console.warn(`Skipping ${repo.name}:`, err.message);
         }
+        return languagesData;
+    } catch (error) {
+        console.error('Error fetching repos:', error);
+        throw error;
     }
-
-    return languageData;
-};
+}
